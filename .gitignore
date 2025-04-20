@@ -1,0 +1,38 @@
+# Clojure specific
+.clj-kondo/
+.cpcache/
+.lein-*
+.nrepl-port
+.prepl-port
+target/
+classes/
+checkouts/
+
+# IntelliJ IDEA specific
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code specific
+.vscode/
+.calva/
+.lsp/
+
+# Build artifacts
+/pom.xml.asc
+/pom.xml
+/.lein-*
+/.nrepl-port
+/.prepl-port
+
+# Logs
+*.log
+
+# System specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+/out
