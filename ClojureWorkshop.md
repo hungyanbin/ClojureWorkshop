@@ -7,7 +7,6 @@ Clojure is a modern, dynamic, and functional programming language that runs on t
 ### Key Characteristics of Clojure:
 
 - **Functional Programming**: Emphasizes pure functions and immutable data structures
-- **Lisp Dialect**: Uses S-expressions and homoiconicity (code as data)
 - **JVM-based**: Leverages the Java ecosystem and interoperability
 - **Concurrency-oriented**: Designed for modern multi-core processors
 
@@ -169,7 +168,51 @@ Vectors are optimized for random access and appending to the end:
 (assoc [1 2 3] 1 42) ; => [1 42 3]
 ```
 
-### Structure Sharing
+### Comparing Lists and Vectors
+
+While both lists and vectors are sequential collections in Clojure, they have important differences in terms of performance characteristics and use cases:
+
+| Feature | List | Vector |
+|---------|------|--------|
+| Syntax | `'(1 2 3)` | `[1 2 3]` |
+| Access pattern | Sequential access from the beginning | Random access by index |
+| Optimized operations | Adding/removing at the beginning: `first`, `rest`, `cons` | Random access and adding at the end: `get`, `nth`, `conj` |
+| Performance for `first` | O(1) | O(1) |
+| Performance for `nth`/`get` | O(n) - must traverse the list | O(log32 n) - efficient tree lookup |
+| Performance for `conj` | O(1) - adds to the beginning | O(log32 n) - adds to the end |
+| Common use cases | Processing data sequentially, stacks | Random access, function arguments, records |
+
+### Internal Implementation
+
+#### Lists
+
+Clojure's persistent lists are implemented as singly-linked lists:
+
+1. Each node contains a value and a reference to the next node
+2. The list maintains a reference to the head (first node)
+3. Operations like `first` and `rest` are very efficient (O(1))
+4. Adding to the beginning with `cons` is also efficient (O(1))
+5. However, accessing elements by index requires traversing the list from the beginning (O(n))
+
+When you "modify" a list, Clojure creates a new list that shares structure with the original:
+
+```clojure
+(def my-list '(2 3 4))
+(def new-list (cons 1 my-list))
+```
+
+In this example:
+- `new-list` is a new list with `1` as its first element
+- The rest of `new-list` points to the entire original `my-list`
+- Both lists share the nodes for `2`, `3`, and `4`
+- No data is copied, only a new head node is created
+
+This implementation makes lists ideal for:
+- Stack-like operations (push/pop from the beginning)
+- Sequential processing from start to finish
+- Recursive algorithms that process the first element and then recur on the rest
+
+#### Vectors
 
 ![Persistent Vector Structure](https://hypirion.com/sha/fbeb457c894952aaa43270a4682f709f3c9ddd28b83a076a91152389ece301dc.webp)
 
