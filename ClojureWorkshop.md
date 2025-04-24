@@ -402,6 +402,24 @@ When `fib` is called with a value, it checks if it has already calculated the re
 
 This reduces the time complexity from O(2^n) to O(n), making it much more efficient for larger values of n.
 
+#### Why Memoization is Safe in Functional Languages
+
+Memoization in Clojure is particularly effective and safe because of two key properties of functional programming:
+
+1. **Pure Functions**: In Clojure, functions are typically pure, meaning they:
+   - Always return the same output for the same input
+   - Have no side effects (don't modify external state)
+   - Don't depend on external mutable state
+
+2. **Referential Transparency**: This property means that an expression can be replaced with its value without changing the program's behavior. For example, if `(fib 10)` evaluates to 55, then every occurrence of `(fib 10)` can be replaced with 55.
+
+These properties guarantee that caching function results with memoization is safe and won't lead to incorrect behavior. In contrast, memoizing impure functions in imperative languages can be dangerous if the function:
+- Depends on global state that might change
+- Has side effects that should occur each time it's called
+- Returns different results for the same input based on external factors
+
+The combination of immutable data structures and pure functions makes Clojure ideal for techniques like memoization, allowing significant performance improvements without sacrificing correctness.
+
 ### Tail-Recursive Implementation (FibRecur.clj)
 
 ```clojure
@@ -426,6 +444,85 @@ This implementation uses tail recursion with the `recur` special form:
    - After n iterations, `b` holds the nth Fibonacci number
 
 This implementation is both efficient (O(n) time complexity) and stack-safe due to the use of `recur`, which performs tail-call optimization.
+
+### How Tail Call Optimization (TCO) Works at the Compiler Level
+
+Let's examine how the Clojure compiler transforms tail-recursive code using a factorial example:
+
+```clojure
+;; Tail-recursive factorial with recur
+(defn factorial [n]
+  (letfn [(fact-iter [n acc]
+            (if (<= n 1)
+              acc
+              (recur (dec n) (* acc n))))]
+    (fact-iter n 1)))
+```
+
+At the compiler level, here's what happens:
+
+1. **Without TCO**, the JVM bytecode for a recursive call would look conceptually like:
+   ```
+   ; Calculate (dec n)
+   ; Calculate (* acc n)
+   INVOKE fact-iter with new args  ; Creates a new stack frame
+   RETURN result                   ; Return to caller
+   ```
+
+2. **With TCO** using `recur`, the Clojure compiler transforms this into:
+   ```
+   ; Calculate (dec n) and store in n's location
+   ; Calculate (* acc n) and store in acc's location
+   GOTO beginning-of-function      ; Jump back to start, reusing the same stack frame
+   ```
+
+For example, when calculating `(factorial 5)`:
+
+Without TCO, the execution would create multiple stack frames:
+```
+Call fact-iter(5, 1)
+  Call fact-iter(4, 5)
+    Call fact-iter(3, 20)
+      Call fact-iter(2, 60)
+        Call fact-iter(1, 120)
+          Return 120
+        Return 120
+      Return 120
+    Return 120
+  Return 120
+```
+
+With TCO, the compiler generates code that reuses a single stack frame:
+```
+Initialize fact-iter with n=5, acc=1
+LOOP:
+  Is n <= 1? No
+  Set n = 4, acc = 5
+  GOTO LOOP
+LOOP:
+  Is n <= 1? No
+  Set n = 3, acc = 20
+  GOTO LOOP
+LOOP:
+  Is n <= 1? No
+  Set n = 2, acc = 60
+  GOTO LOOP
+LOOP:
+  Is n <= 1? No
+  Set n = 1, acc = 120
+  GOTO LOOP
+LOOP:
+  Is n <= 1? Yes
+  Return acc (120)
+```
+
+The Clojure compiler achieves this by:
+1. Identifying tail positions in the code
+2. Replacing `recur` calls with parameter reassignments and jumps
+3. Eliminating the creation of new stack frames
+4. Preserving the logical flow of the algorithm while making it stack-safe
+
+This is why `recur` is essential for writing efficient recursive functions in Clojure - it explicitly signals to the compiler that tail call optimization should be applied.
 
 ## 7. Binomial Coefficients
 
